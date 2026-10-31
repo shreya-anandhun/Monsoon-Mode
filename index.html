@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Monsoon Mode</title>
+  <meta name="description" content="Live rain and weather for Chennai, Madurai, Trichy and Bengaluru, in plain words, with warnings and the latest local news.">
+  <meta name="theme-color" content="#4d5f72">
+  <link rel="icon" href="images/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=6">
+</head>
+<body data-sky="cloudy-day" data-state="loading">
+  <!-- The live sky: colours from CSS, clouds/rain/glow drawn by js/sky.js -->
+  <canvas id="sky" aria-hidden="true"></canvas>
+
+  <div class="shell">
+    <!-- Navigation: a sidebar on laptops, a tab bar at the bottom on phones -->
+    <nav class="nav" aria-label="Pages">
+      <p class="brand">Monsoon Mode</p>
+      <a href="#today" class="tab" data-view="today" aria-current="page"><span class="i"></span><span>Today</span></a>
+      <a href="#week" class="tab" data-view="week"><span class="i"></span><span>This week</span></a>
+      <a href="#map" class="tab tab-map" data-view="map"><span class="i"></span><span>Live map</span></a>
+      <a href="#ready" class="tab" data-view="ready"><span class="i"></span><span>Be ready</span></a>
+    </nav>
+
+    <main id="main">
+      <!-- ============ TODAY ============ -->
+      <section class="view" id="view-today" aria-label="Today's weather">
+        <header class="top">
+          <div class="who">
+            <h1 id="welcome">Welcome</h1>
+            <button class="place" id="place-btn" aria-label="Change location">
+              <span class="i" id="pin-i"></span>
+              <span id="place">Finding your location…</span>
+            </button>
+            <p class="updated" id="updated"></p>
+          </div>
+          <div class="corner">
+            <div class="corner-row">
+              <button class="round" id="bell" aria-label="Weather alerts">
+                <span class="i" id="bell-i"></span>
+                <span class="dot" id="bell-dot" hidden></span>
+              </button>
+              <button class="round avatar" id="avatar" aria-label="Your profile">S</button>
+            </div>
+            <div class="units" role="group" aria-label="Temperature unit">
+              <button id="unit-c" aria-pressed="true">°C</button>
+              <button id="unit-f" aria-pressed="false">°F</button>
+            </div>
+          </div>
+        </header>
+
+        <!-- Serious warning banner (only shown when there is one) -->
+        <button class="banner" id="banner" hidden>
+          <span class="i" id="banner-i"></span>
+          <span><strong id="banner-title"></strong><span id="banner-text"></span></span>
+        </button>
+
+        <!-- Verdict: what to do, worked out from the live data -->
+        <div class="verdict glass" id="verdict" aria-live="polite">
+          <span class="i" id="verdict-i"></span>
+          <p id="verdict-text">Checking the sky…</p>
+        </div>
+
+        <div class="grid">
+          <!-- Current weather -->
+          <article class="now glass" id="now" aria-labelledby="now-h">
+            <h2 id="now-h" class="label">Current weather</h2>
+
+            <div class="now-main">
+              <div class="now-icon" id="now-icon"></div>
+              <div>
+                <p class="temp" id="temp">--°</p>
+                <p class="cond" id="cond">Loading</p>
+                <p class="feels" id="feels"></p>
+              </div>
+            </div>
+
+            <ul class="stats" id="stats">
+              <li><span class="i" data-i="drop"></span><span class="k">Rain chance</span><span class="v" id="s-chance">--</span></li>
+              <li><span class="i" data-i="humid"></span><span class="k">Humidity</span><span class="v" id="s-humid">--</span></li>
+              <li><span class="i" data-i="wind"></span><span class="k">Wind</span><span class="v" id="s-wind">--</span></li>
+            </ul>
+
+            <button class="more-btn" id="more-btn" aria-haspopup="dialog" aria-controls="details">
+              <span>Read more</span><span class="i chev"></span>
+            </button>
+
+            <!-- Error state lives inside the card -->
+            <div class="error" id="error" hidden>
+              <p><strong>We couldn't reach the weather service.</strong></p>
+              <p id="error-text">Check your internet connection, then try again.</p>
+              <button class="btn" id="retry"><span class="i" id="retry-i"></span>Try again</button>
+            </div>
+          </article>
+
+          <!-- Local news -->
+          <article class="news glass" aria-labelledby="news-h">
+            <div class="news-head">
+              <h2 id="news-h" class="label">Rain news near you</h2>
+              <span class="small" id="news-when"></span>
+            </div>
+            <ul class="news-list" id="news-list"></ul>
+          </article>
+        </div>
+
+        <footer class="credits">
+          <p>Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>. Place names by <a href="https://www.bigdatacloud.com/" target="_blank" rel="noopener">BigDataCloud</a>. Warnings shown here are worked out by Monsoon Mode from forecast data and are not official. Always follow IMD and your district administration.</p>
+        </footer>
+      </section>
+
+      <!-- ============ THIS WEEK + LIVE MAP ============
+           On a laptop both columns show side by side. On a phone the
+           "This week" tab shows only the report and the "Live map" tab
+           shows only the map (see body[data-view] rules in the CSS). -->
+      <section class="view week-grid" id="view-week" hidden aria-label="This week's weather and live map">
+
+        <!-- Live map: Windy's free embed, with our own layer menu -->
+        <article class="map-card glass" id="map-card" aria-labelledby="map-h">
+          <div class="map-head">
+            <div>
+              <h1 id="map-h">Live map</h1>
+              <p class="small" id="map-sub">Rain and thunder near you right now</p>
+            </div>
+            <a class="btn btn-small" id="map-open" href="https://www.windy.com/?13.068,80.274,7" target="_blank" rel="noopener">Open in Windy<span class="i" id="map-ext"></span></a>
+          </div>
+
+          <div class="map-frame">
+            <iframe id="windy" title="Live weather map by Windy" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
+            <p class="map-loading" id="map-loading">Loading the live map…</p>
+            <p class="map-offline" id="map-offline" hidden>You seem to be offline, so the live map can't load. It will appear when you're back online.</p>
+
+            <!-- Layer menu, on the right like Windy's -->
+            <div class="layers" role="group" aria-label="Map layer" id="layers"></div>
+          </div>
+
+          <!-- Colour scale for the current layer -->
+          <div class="scale" id="scale" aria-label="Colour scale"></div>
+          <p class="small map-credit">Map by <a href="https://www.windy.com/" target="_blank" rel="noopener">Windy.com</a>. Layer colours follow Windy's own scale.</p>
+        </article>
+
+        <!-- 6-day report -->
+        <section class="report" aria-labelledby="report-h">
+          <div class="report-head">
+            <h1 id="report-h">Next 6 days weather report</h1>
+            <p class="small" id="report-sub"></p>
+          </div>
+
+          <article class="glass chart-card" aria-labelledby="chart-h">
+            <h2 class="label" id="chart-h">Expected rain each day</h2>
+            <div class="chart" id="chart"></div>
+          </article>
+
+          <article class="glass days-card">
+            <ol class="days" id="days" aria-label="Daily forecast, tap a day for details"></ol>
+            <div class="error" id="week-error" hidden>
+              <p><strong>We couldn't load the forecast.</strong></p>
+              <p>Check your internet connection, then try again.</p>
+              <button class="btn" id="week-retry">Try again</button>
+            </div>
+          </article>
+        </section>
+      </section>
+
+      <!-- ============ BE READY (designed next) ============ -->
+      <section class="view" id="view-ready" hidden aria-label="Be ready">
+        <div class="soon glass">
+          <div class="soon-icon" id="soon-ready"></div>
+          <h1>Be ready</h1>
+          <p>The rain checklist, safety tips and emergency numbers come after This week.</p>
+          <a class="btn" href="#today">Back to today</a>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ============ READ MORE (frosted box) ============ -->
+  <dialog class="glass-box" id="details" aria-labelledby="details-title">
+    <div class="box-head">
+      <div>
+        <h2 id="details-title">More about the weather</h2>
+        <p id="details-sub"></p>
+      </div>
+      <button class="round" data-close aria-label="Close"><span class="i x"></span></button>
+    </div>
+    <h3 class="label">Next 6 hours</h3>
+    <ol class="hours" id="hours"></ol>
+    <h3 class="label">What the numbers mean</h3>
+    <dl class="explain" id="explain"></dl>
+  </dialog>
+
+  <!-- ============ ONE DAY (frosted box, opened from the report) ============ -->
+  <dialog class="glass-box" id="day-box" aria-labelledby="day-title">
+    <div class="box-head">
+      <div>
+        <h2 id="day-title">Monday</h2>
+        <p id="day-sub"></p>
+      </div>
+      <button class="round" data-close aria-label="Close"><span class="i x"></span></button>
+    </div>
+    <div class="day-top">
+      <div class="day-icon" id="day-icon"></div>
+      <div>
+        <p class="day-range" id="day-range"></p>
+        <p class="day-cond" id="day-cond"></p>
+        <p class="day-verdict" id="day-verdict"></p>
+      </div>
+    </div>
+    <ul class="stats day-stats" id="day-stats"></ul>
+    <h3 class="label">How the day changes</h3>
+    <ol class="periods" id="day-periods"></ol>
+    <h3 class="label">More</h3>
+    <dl class="explain" id="day-more"></dl>
+  </dialog>
+
+  <!-- ============ FIRST VISIT ============ -->
+  <dialog class="sheet welcome-sheet" id="onboard" aria-labelledby="ob-title">
+    <form id="ob-name" class="ob-step">
+      <div class="ob-art" id="ob-art"></div>
+      <h2 id="ob-title">Welcome to Monsoon Mode</h2>
+      <p>Live rain for your area, in plain words. What should we call you?</p>
+      <label for="name-input" class="visually-hidden">Your name</label>
+      <input id="name-input" name="name" type="text" maxlength="30" autocomplete="given-name" placeholder="Your name" required>
+      <button class="btn btn-solid" type="submit">Continue</button>
+      <p class="small">Your name stays on this device. There's no account.</p>
+    </form>
+  </dialog>
+
+  <!-- ============ LOCATION PICKER (first visit and "change location") ============ -->
+  <dialog class="sheet" id="where" aria-labelledby="where-title">
+    <button class="sheet-close round" data-close aria-label="Close"><span class="i x"></span></button>
+    <h2 id="where-title">Where are you?</h2>
+    <p>Share your location for weather on your street, or pick a city.</p>
+    <button class="btn btn-solid wide" id="use-gps"><span class="i" id="gps-i"></span>Use my location</button>
+    <p class="gps-msg small" id="gps-msg" hidden></p>
+    <p class="label">Or pick a city</p>
+    <div class="cities" id="cities"></div>
+  </dialog>
+
+  <!-- ============ PROFILE ============ -->
+  <dialog class="sheet" id="profile" aria-labelledby="profile-title">
+    <button class="sheet-close round" data-close aria-label="Close"><span class="i x"></span></button>
+    <h2 id="profile-title">Your profile</h2>
+    <form id="profile-form">
+      <label for="profile-name" class="label">Name</label>
+      <input id="profile-name" type="text" maxlength="30" autocomplete="given-name" required>
+      <button class="btn btn-solid" type="submit">Save name</button>
+    </form>
+    <p class="label">Location</p>
+    <p id="profile-place"></p>
+    <button class="btn" id="profile-change">Change location</button>
+    <p class="small">Monsoon Mode only keeps your name and your chosen city, on this device. Nothing is sent anywhere.</p>
+  </dialog>
+
+  <!-- ============ ALERTS ============ -->
+  <dialog class="sheet" id="alerts" aria-labelledby="alerts-title">
+    <button class="sheet-close round" data-close aria-label="Close"><span class="i x"></span></button>
+    <h2 id="alerts-title">Alerts</h2>
+    <p class="label">From the forecast</p>
+    <ul class="alert-list" id="alert-list"></ul>
+    <p class="small">These are worked out by Monsoon Mode from forecast data, using IMD's rainfall categories. They are not official warnings.</p>
+    <p class="label">Official alerts</p>
+    <ul class="official" id="official"></ul>
+    <p class="label">In an emergency</p>
+    <ul class="numbers">
+      <li><span class="num">112</span><span>All emergencies</span></li>
+      <li><span class="num">1070</span><span>Tamil Nadu disaster helpline</span></li>
+    </ul>
+  </dialog>
+
+  <script src="js/data.js?v=6"></script>
+  <script src="js/icons.js?v=6"></script>
+  <script src="js/sky.js?v=6"></script>
+  <script src="js/app.js?v=6"></script>
+  <script src="js/week.js?v=6"></script>
+</body>
+</html>

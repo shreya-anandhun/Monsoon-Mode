@@ -1,0 +1,37 @@
+# Builds and publishes Monsoon Mode to GitHub Pages.
+# Runs when you push, every 30 minutes (to refresh the news), and on demand.
+# In the repo: Settings > Pages > Source must be set to "GitHub Actions".
+name: Publish site with fresh news
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch rain headlines
+        run: python3 scripts/fetch_news.py
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4
